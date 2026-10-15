@@ -1,0 +1,73 @@
+# Configuração do Apache para o site do Koda.
+#
+# A maioria das hospedagens com cPanel usa Apache, e este arquivo é o que ele lê. Vai junto
+# com o `dist/` para a pasta pública (`public_html/`): sobe o conteúdo da pasta, este
+# arquivo incluído.
+
+# ---------------------------------------------------------------- tipo dos arquivos
+# Sem isto, alguns servidores servem o `.js` como texto e o site fica em branco — o
+# navegador recusa um módulo que não vem com o tipo certo.
+<IfModule mod_mime.c>
+  AddType text/javascript .js .mjs
+  AddType text/css .css
+  AddType image/svg+xml .svg
+  AddType image/png .png
+  AddType image/webp .webp
+  AddType application/json .json
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# ---------------------------------------------------------------- compressão
+# O site tem ~570 KB; comprimido fica em ~180 KB.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ---------------------------------------------------------------- cache
+# Os arquivos de `assets/` têm um código no nome (`index-a1b2c3.js`), que muda a cada build.
+# Então eles podem ser guardados para sempre: quando o site muda, o nome muda junto, e o
+# navegador baixa o novo sozinho.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  # O `index.html` **não** entra: é ele que aponta para os arquivos com nome novo. Guardado
+  # em cache, o visitante continuaria pedindo o build antigo.
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|png|svg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Segurança: o básico que não atrapalha nada.
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ---------------------------------------------------------------- HTTPS
+# Se o certificado (Let's Encrypt do cPanel) já estiver ativo, tudo vai para HTTPS.
+# Comente estas linhas se o domínio ainda não tiver certificado — senão o site entra em
+# laço de redirecionamento.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
+
+# ---------------------------------------------------------------- a página não quebra
+# O site é uma página só, e a documentação usa `#` no endereço (`/#/documentacao`) — o que
+# **não** chega ao servidor: o `#` é do navegador. Então não há rota para reescrever, e o
+# site funciona em qualquer hospedagem, inclusive nas mais simples.
+#
+# O `ErrorDocument` cobre o caso de alguém digitar um caminho que não existe: em vez de uma
+# página de erro do servidor, abre o site.
+ErrorDocument 404 /index.html

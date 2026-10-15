@@ -1,0 +1,110 @@
+// Copiado de koda/src/components/ToolSteps.tsx — ver scripts/copiar-koda.mjs
+import { ChevronRight, TriangleAlert, Wrench } from "lucide-react";
+import { formatarDuracao } from "./duracao";
+import { recursoDoPasso, resumoArgumentos, rotuloDoPasso } from "./tools";
+import DiffDoPasso from "./DiffDoPasso";
+import { ToolIcon, ToolSpinner } from "./ToolIcon";
+function ToolSteps({
+  steps,
+  resumido = false
+}) {
+  if (steps.length === 0) return null;
+  const linhas = steps.map((step, index) => <Linha key={step.call_id || `${step.name}-${index}`} step={step} />);
+  if (!resumido) return <div className="flex flex-col msg-in">{linhas}</div>;
+  const rodando = steps.some((step) => step.output === "" && step.duration_ms === 0);
+  const total = steps.reduce((soma, step) => soma + step.duration_ms, 0);
+  return <details className="group msg-in">
+      <summary className="flex cursor-pointer list-none items-center gap-2 py-1 text-koda-fg/50 transition-colors duration-200 select-none hover:text-koda-fg/85">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+          {rodando ? <ToolSpinner className="h-3.5 w-3.5 text-koda-accent" /> : <Wrench className="h-3.5 w-3.5" strokeWidth={1.7} />}
+        </span>
+
+        <span className="shrink-0 text-[12.5px] font-medium">
+          {steps.length === 1 ? "1 ferramenta" : `${steps.length} ferramentas`}
+        </span>
+
+        <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11.5px] tabular-nums text-koda-fg/30">
+          {rodando ? "rodando" : total > 0 ? formatarDuracao(total) : ""}
+          <ChevronRight
+    className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-90"
+    strokeWidth={1.7}
+  />
+        </span>
+      </summary>
+
+      <div className="mt-0.5 mb-2 ml-[3px] flex flex-col border-l border-koda-fg/10 pl-3">
+        {linhas}
+      </div>
+    </details>;
+}
+function Linha({ step }) {
+  const rodando = step.output === "" && step.duration_ms === 0;
+  const resumo = recursoDoPasso(step);
+  return <details className="group">
+      <summary
+    title={`${step.name}(${resumoArgumentos(step.arguments)})`}
+    className="flex cursor-pointer list-none items-center gap-2 py-1 text-koda-fg/50 transition-colors duration-200 select-none hover:text-koda-fg/85"
+  >
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+          {rodando ? <ToolSpinner className="h-3.5 w-3.5 text-koda-accent" /> : step.ok ? <ToolIcon name={step.name} className="h-3.5 w-3.5" /> : <TriangleAlert className="h-3.5 w-3.5" strokeWidth={1.7} />}
+        </span>
+
+        <span className="shrink-0 text-[12.5px] font-medium">
+          {rotuloDoPasso(step)}
+        </span>
+
+        <span className="min-w-0 truncate font-mono text-[11.5px] text-koda-fg/30">
+          {resumo}
+        </span>
+
+        <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11.5px] tabular-nums text-koda-fg/30">
+          {rodando ? "rodando" : step.ok ? formatarDuracao(step.duration_ms) : "falhou"}
+          <ChevronRight
+    className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-90"
+    strokeWidth={1.7}
+  />
+        </span>
+      </summary>
+
+      <div className="mt-0.5 mb-2 ml-[3px] border-l border-koda-fg/10 pl-3">
+        {
+    /*
+     * O nome técnico do passo. Para MCP ele é o endereço do recurso
+     * (`mcp__eco_server__somar`) — feio de propósito: é o detalhe, não o rótulo. O
+     * servidor de origem vem na linha de baixo, com o nome real do `mcps.json`.
+     */
+  }
+        <p className="font-mono text-[10px] tracking-wider text-koda-fg/25 uppercase">
+          {step.name}
+        </p>
+        {step.mcp && <p className="mt-0.5 text-[11px] text-koda-fg/35">
+            servidor MCP <span className="font-medium text-koda-fg/55">{step.mcp.servidor}</span>
+            {" \xB7 "}
+            ferramenta{" "}
+            <span className="font-medium text-koda-fg/55">{step.mcp.ferramenta}</span>
+          </p>}
+        {
+    /*
+     * O código da chamada, com o verde no que entrou e o vermelho no que saiu. Só
+     * aparece nas ferramentas que escrevem arquivo — as outras não têm mudança para
+     * mostrar, e o componente devolve nada sozinho.
+     */
+  }
+        <DiffDoPasso step={step} />
+        {
+    /*
+     * `break-words` para a saída não virar rolagem lateral: um JSON numa linha,
+     * um base64 ou uma URL de download são o caso comum aqui, e rolar de lado
+     * dentro de um bloco de saída esconde justamente o fim da linha, que é onde
+     * costuma estar o erro. O `overflow-auto` continua no lugar para altura.
+     */
+  }
+        <pre className="mt-1 max-h-64 overflow-auto font-mono text-[11.5px] leading-5 break-words whitespace-pre-wrap text-koda-fg/50">
+          {step.output || "sem sa\xEDda"}
+        </pre>
+      </div>
+    </details>;
+}
+export {
+  ToolSteps as default
+};

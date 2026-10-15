@@ -1,0 +1,61 @@
+name: Publicar o site
+
+# Publica o site no GitHub Pages a cada envio para a `main`.
+#
+# O site é estático, mas **não** é o `dist/` guardado no repositório: ele é gerado aqui, a
+# partir do código e do manual. Assim o que está versionado é a fonte (o que se edita), e
+# não o resultado (que muda a cada build e só faz barulho no histórico).
+#
+# O mesmo `npm run build` que roda na sua máquina roda aqui — inclusive o teste que
+# renderiza cada tela. Se uma tela quebrar, a publicação para em vez de ir ao ar quebrada.
+
+on:
+  push:
+    branches: [main]
+  # Permite disparar à mão, pela aba Actions.
+  workflow_dispatch:
+
+# As permissões que o Pages precisa.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Um envio de cada vez. `cancel-in-progress: false` para não deixar a publicação pela
+# metade: se dois envios chegarem juntos, o segundo espera o primeiro terminar.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar as dependências
+        run: npm ci
+
+      - name: Gerar e conferir o site
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

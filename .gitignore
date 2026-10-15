@@ -1,0 +1,21 @@
+# Dependências e resultado do build
+node_modules
+dist
+*.local
+
+# Sobras do sistema e do editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# O pacote que se sobe por FTP — é gerado, não versionado
+*.zip
+
+# O cache do teste de render
+node_modules/.cache
+
+# O que o MCP `navegador` do Koda publica enquanto roda: prints da tela e o estado da
+# sessão. É sobra de ferramenta, não parte do site.
+data/
