@@ -2,15 +2,13 @@
 
 A página do produto e a documentação do Koda.
 
-**No ar:** https://panhard-dev.github.io/site-koda/
-
 ---
 
 ## O que tem aqui
 
 | Endereço | O que é |
 | --- | --- |
-| `/` | A página do produto: o que o Koda faz, o vídeo da conversa e os recursos |
+| `/` | A página do produto: o que o Koda faz, a conversa rodando ao vivo e os recursos |
 | `/#/documentacao` | O manual completo, em 22 seções |
 
 ---
@@ -91,20 +89,26 @@ quebra na hora de desenhar — a tela ficava preta e o `vite build` não acusava
 
 ---
 
-## Publicação
+## Publicar
 
-O site vai ao ar **sozinho** a cada envio para a `main`, pela ação em
-`.github/workflows/publicar.yml`.
+O `dist/` é **estático**: HTML, CSS, JavaScript e duas imagens. Não tem servidor, banco,
+nem Node rodando. Isso significa que ele abre em qualquer hospedagem — e também por
+**duplo clique** no arquivo, sem servidor nenhum.
 
-Para funcionar, uma vez só, no repositório:
+```bash
+npm run build
+```
 
-**Settings → Pages → Source: GitHub Actions**
+O conteúdo de `dist/` sobe para a pasta pública da hospedagem. No cPanel costuma ser
+`public_html/` — e vai o **conteúdo**, não a pasta: tem de ficar `public_html/index.html`,
+e não `public_html/dist/index.html`.
 
-### Em outra hospedagem
+O `.htaccess` que vai junto serve para Apache/cPanel: tipo dos arquivos (sem ele alguns
+servidores servem o `.js` como texto e o site fica **em branco**), compressão, cache e
+HTTPS.
 
-O `dist/` é estático e abre em qualquer lugar. O `.htaccess` que vai junto serve para
-cPanel/Apache (tipo dos arquivos, compressão, cache e HTTPS) — veja
-[PUBLICAR.md](PUBLICAR.md).
+💡 **A documentação usa `#` no endereço** (`/#/documentacao`). O `#` é do navegador, não
+chega ao servidor — então não há rota para configurar, e qualquer hospedagem serve.
 
 ---
 
